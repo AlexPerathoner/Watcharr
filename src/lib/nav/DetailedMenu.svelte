@@ -17,7 +17,12 @@
   $: dve = $wlDetailedView;
 </script>
 
-<div class={`menu${$page.url?.pathname.startsWith("/search/") ? " on-search-page" : ""}`}>
+<div
+  class={`menu${$page.url?.pathname.startsWith("/search/") ? " on-search-page" : ""}`}
+  style="right: {$page.url?.pathname === '/' || $page.url?.pathname.startsWith('/search/')
+    ? 92
+    : 12}px;"
+>
   <div class="inner">
     <h4 class="norm sm-caps">Shown Details</h4>
     <button
@@ -50,7 +55,6 @@
 <style lang="scss">
   div.menu {
     width: 200px;
-    right: 92px;
 
     &:before {
       left: 3px;

@@ -15,6 +15,16 @@
   $: settings = $userSettings;
   $: isUsingThumbs = settings && settings.ratingSystem === RatingSystem.Thumbs;
 
+  let statusColorMap = {
+    FINISHED: "var(--status-finished-color)",
+    PLANNED: "var(--status-planned-color)",
+    WATCHING: "var(--status-watching-color)",
+    HOLD: "var(--status-hold-color)",
+    DROPPED: "var(--status-dropped-color)"
+  };
+
+  $: backgroundColor = status !== undefined ? statusColorMap[status] : "";
+
   function formatDate(e: number) {
     if (!e) {
       return "Unknown";
@@ -26,8 +36,8 @@
   }
 </script>
 
-{#if ($page.url?.pathname === "/" || $page.url?.pathname.startsWith("/search/")) && details && dve && dve.length > 0}
-  <div class="extra-details">
+{#if details && dve && dve.length > 0}
+  <div class="extra-details" style="background-color: {backgroundColor}">
     <!--
       The `if` statements can't be on their own line to look pretty
       because that will cause whitespace in the generated markup,
@@ -90,7 +100,7 @@
 <style lang="scss">
   .extra-details {
     position: absolute;
-    bottom: 5px;
+    bottom: 0.5rem;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
@@ -98,9 +108,8 @@
     justify-content: center;
     align-items: center;
     font-size: 14px;
-    width: 160px;
+    width: 80%;
     color: white;
-    background-color: $poster-extra-detail-bg-color;
     border-radius: 10px;
     transition: opacity 100ms ease-out;
     pointer-events: none !important;

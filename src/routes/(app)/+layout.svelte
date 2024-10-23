@@ -252,7 +252,7 @@
     </div>
     <div class="btns">
       <!-- Detailed posters only supported on own watched list currently -->
-      {#if $page.url?.pathname === "/" || $page.url?.pathname.startsWith("/search/")}
+      {#if $page.url?.pathname === "/" || $page.url?.pathname.startsWith("/search/") || $page.url?.pathname.startsWith("/discover/") || $page.url?.pathname.startsWith("/person/")}
         <button
           class="plain other detailedView"
           on:click={() => {
