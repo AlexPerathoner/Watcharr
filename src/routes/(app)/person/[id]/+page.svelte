@@ -11,6 +11,7 @@
   import type { TMDBPersonCombinedCredits, TMDBPersonDetails } from "@/types";
   import axios from "axios";
   import { onMount } from "svelte";
+  import Checkbox from "@/lib/Checkbox.svelte";
 
   export let data;
 
@@ -22,6 +23,7 @@
   let sortOption = "Vote count";
   let cachedCredits: TMDBPersonCombinedCredits | undefined;
   let sortedCredits: TMDBPersonCombinedCredits | undefined;
+  let onMyListFilter = false;
 
   onMount(() => {
     const unsubscribe = page.subscribe((value) => {
@@ -39,7 +41,11 @@
   }
 
   $: if (sortOption && cachedCredits) {
-    sortedCredits = getSortedCredits(cachedCredits, sortOption);
+    sortedCredits = getSortedCredits(cachedCredits, sortOption, onMyListFilter);
+  }
+
+  $: if (cachedCredits && onMyListFilter !== undefined) {
+    sortedCredits = getSortedCredits(cachedCredits, sortOption, onMyListFilter);
   }
 
   async function fetchPersonData() {
@@ -51,7 +57,7 @@
       }
       person = await getPerson(personId);
       cachedCredits = await getPersonCredits();
-      sortedCredits = getSortedCredits(cachedCredits, sortOption);
+      sortedCredits = getSortedCredits(cachedCredits, sortOption, onMyListFilter);
     } catch (err: any) {
       person = undefined;
       pageError = err;
@@ -68,9 +74,16 @@
     return credits;
   }
 
-  function getSortedCredits(credits: TMDBPersonCombinedCredits, sortOption: string) {
+  function getSortedCredits(
+    credits: TMDBPersonCombinedCredits,
+    sortOption: string,
+    onMyListFilter: boolean
+  ) {
     if (!credits || !credits.cast) return;
-    let sorted = [...credits.cast];
+    let filteredCast = credits.cast.filter(
+      (c) => !onMyListFilter || wList.some((w) => w.content?.tmdbId === c.id)
+    );
+    let sorted = [...filteredCast];
     switch (sortOption) {
       case "Vote count":
         sorted.sort((a, b) => b.vote_count - a.vote_count);
@@ -162,6 +175,10 @@
         </div>
       </div>
       <div class="filters container">
+        <div class="listFilter">
+          <span>On my list</span>
+          <Checkbox name="On my list" bind:value={onMyListFilter} />
+        </div>
         <DropDown
           bind:active={sortOption}
           placeholder="Vote count"
@@ -196,6 +213,16 @@
     justify-content: flex-end;
     margin-bottom: -55px;
     margin-top: 35px;
+    .listFilter {
+      display: flex;
+      margin-right: 30px;
+      span {
+        margin-left: 5px;
+        margin-right: 5px;
+        margin-top: auto;
+        margin-bottom: auto;
+      }
+    }
   }
   .container {
     margin: 0 auto;
