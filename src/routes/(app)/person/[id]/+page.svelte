@@ -5,7 +5,7 @@
   import Poster from "@/lib/poster/Poster.svelte";
   import PosterList from "@/lib/poster/PosterList.svelte";
   import Spinner from "@/lib/Spinner.svelte";
-  import { removeWatched, updateWatched } from "@/lib/util/api";
+  import DropDown from "@/lib/DropDown.svelte";
   import { getWatchedDependedProps } from "@/lib/util/helpers";
   import { watchedList } from "@/store";
   import type { TMDBPersonCombinedCredits, TMDBPersonDetails } from "@/types";
@@ -19,6 +19,9 @@
   let personId: number | undefined;
   let person: TMDBPersonDetails | undefined;
   let pageError: Error | undefined;
+  let sortOption = "Vote count";
+  let cachedCredits: TMDBPersonCombinedCredits | undefined;
+  let sortedCredits: TMDBPersonCombinedCredits | undefined;
 
   onMount(() => {
     const unsubscribe = page.subscribe((value) => {
@@ -31,21 +34,28 @@
     return unsubscribe;
   });
 
-  $: {
-    (async () => {
-      try {
-        person = undefined;
-        pageError = undefined;
-        if (!personId) {
-          return;
-        }
-        const data = await getPerson(personId);
-        person = data;
-      } catch (err: any) {
-        person = undefined;
-        pageError = err;
+  $: if (personId) {
+    fetchPersonData();
+  }
+
+  $: if (sortOption && cachedCredits) {
+    sortedCredits = getSortedCredits(cachedCredits, sortOption);
+  }
+
+  async function fetchPersonData() {
+    try {
+      person = undefined;
+      pageError = undefined;
+      if (!personId) {
+        return;
       }
-    })();
+      person = await getPerson(personId);
+      cachedCredits = await getPersonCredits();
+      sortedCredits = getSortedCredits(cachedCredits, sortOption);
+    } catch (err: any) {
+      person = undefined;
+      pageError = err;
+    }
   }
 
   async function getPerson(id: number) {
@@ -53,10 +63,34 @@
   }
 
   async function getPersonCredits() {
-    const credits = (await axios.get(`/content/person/${data.personId}/credits`))
+    let credits = (await axios.get(`/content/person/${data.personId}/credits`))
       .data as TMDBPersonCombinedCredits;
-    credits.cast = credits.cast?.sort((a, b) => b.vote_count - a.vote_count);
     return credits;
+  }
+
+  function getSortedCredits(credits: TMDBPersonCombinedCredits, sortOption: string) {
+    if (!credits || !credits.cast) return;
+    let sorted = [...credits.cast];
+    switch (sortOption) {
+      case "Vote count":
+        sorted.sort((a, b) => b.vote_count - a.vote_count);
+        break;
+      case "Newest":
+        sorted.sort(
+          (a, b) =>
+            new Date(b.release_date || b.first_air_date).valueOf() -
+            new Date(a.release_date || a.first_air_date).valueOf()
+        );
+        break;
+      case "Oldest":
+        sorted.sort(
+          (a, b) =>
+            new Date(a.release_date || a.first_air_date).valueOf() -
+            new Date(b.release_date || b.first_air_date).valueOf()
+        );
+        break;
+    }
+    return { ...credits, cast: sorted };
   }
 </script>
 
@@ -127,20 +161,26 @@
           </div>
         </div>
       </div>
-
-      {#await getPersonCredits()}
-        <Spinner />
-      {:then credits}
+      <div class="filters container">
+        <DropDown
+          bind:active={sortOption}
+          placeholder="Vote count"
+          options={["Vote count", "Newest", "Oldest"]}
+          isDropDownItem={false}
+          showActiveElementsInOptions={true}
+        />
+      </div>
+      {#if sortedCredits}
         <div class="page">
           <PosterList>
-            {#each credits?.cast as c}
+            {#each sortedCredits.cast as c}
               <Poster media={c} {...getWatchedDependedProps(c.id, c.media_type, wList)} fluidSize />
             {/each}
           </PosterList>
         </div>
-      {:catch err}
-        <Error pretty="Failed to load credits!" error={err} />
-      {/await}
+      {:else}
+        <Spinner />
+      {/if}
     {:else}
       person not found
     {/if}
@@ -150,6 +190,20 @@
 </div>
 
 <style lang="scss">
+  .filters {
+    align-items: center;
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: -55px;
+    margin-top: 35px;
+  }
+  .container {
+    margin: 0 auto;
+    min-width: 320px;
+    padding-left: 20px;
+    padding-right: 20px;
+    width: 100%;
+  }
   .content {
     position: relative;
     color: white;
