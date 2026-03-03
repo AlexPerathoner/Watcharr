@@ -8,5 +8,9 @@ services:
       - 3080:3080
     volumes:
       # Contains all of watcharr data (database & cache)
-      - ./data:/data
+      - /mnt/dockpool/beluga/Watcharr/container_data:/data
     restart: unless-stopped
+
+    labels:
+      - "net.unraid.docker.icon=https://i.imgur.com/5Ah733A.png"
+      - "net.unraid.docker.webui=https://watcharr.cubetto.local/"

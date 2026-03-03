@@ -8,4 +8,5 @@ services:
     ports:
       - 3080:3080
     volumes:
-      - ./container_data:/data
+      - /mnt/dockpool/beluga/Watcharr/container_data:/data
+    restart: unless-stopped
