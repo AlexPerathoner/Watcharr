@@ -33,7 +33,7 @@
 		DROPPED: "var(--status-dropped-color)",
 	};
 
-	let backgroundColor = status !== undefined ? statusColorMap[status] : "";
+	let backgroundColor = $derived(status !== undefined ? statusColorMap[status] : "");
 
 	function formatDate(e: number) {
 		if (!e) {
