@@ -46,7 +46,7 @@
 	}
 </script>
 
-{#if (page.url?.pathname === "/" || page.url?.pathname.startsWith("/search") || page.url?.pathname.startsWith("/person") || page.url?.pathname.startsWith("/discover")) && store.wlDetailedView && store.wlDetailedView.length > 0}
+{#if (page.url?.pathname === "/" || page.url?.pathname.startsWith("/search") || page.url?.pathname.startsWith("/person") || page.url?.pathname.startsWith("/discover")) && details && store.wlDetailedView && store.wlDetailedView.length > 0}
 	<div class="extra-details" style="background-color: {backgroundColor}">
 		<!--
       The `if` statements can't be on their own line to look pretty
