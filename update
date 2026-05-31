@@ -1,0 +1,73 @@
+#!/bin/bash
+BACKUP_DIR="backups"
+PROJ_DIR="/mnt/user/beluga/Watcharr/"
+should_rebuild=true;
+
+cd $PROJ_DIR;
+
+currDate=$(date +'%Y%m%d%H%M');
+echo "Running update / backup script at $currDate";
+
+echo "Getting all images used in docker-compose";
+# get all current images and images' ids in docker-compose
+docker-compose ps -q | xargs docker inspect --format='{{.Config.Image}} {{.Image}}' > .temp_images;
+echo "Found $(wc -l < .temp_images) images: $(cat .temp_images)";
+# get all mounted volumes in docker-compose
+echo "Getting all mounted volumes";
+docker-compose ps -q | xargs docker inspect --format='{{.Mounts}}' | awk -F ' ' '{print $2}' > .temp_volumes;
+echo "Found $(wc -l < .temp_volumes) volumes: \n $(cat .temp_volumes)";
+
+# if [ $? -ne 0 ]; then
+#     echo "Failed to retrieve images. Exiting";
+#     exit 1;
+# fi
+
+# stopping container to prevent data corruption: https://watcharr.app/docs/server_config/backup
+echo "Stopping container to prevent data corruption";
+docker-compose stop > /dev/null 2>&1
+
+# create backup
+mkdir -p $BACKUP_DIR;
+
+cat .temp_volumes | awk '{print}' ORS=' ' | xargs sudo tar -zcpf ./$BACKUP_DIR/data$currDate.tar.gz;
+if [ $? -ne 0 ]; then
+    echo "Failed to create backup. Restarting container and exiting.";
+    docker-compose up -d > /dev/null 2>&1;
+    exit 1;
+fi
+
+echo "Finished creating backup at $BACKUP_DIR/$DATA_DIR.$currDate.tar.gz";
+
+
+# # check if there are any new images available
+# while read -r line; do
+#     image=$(echo $line | awk '{print $1}');
+#     image_id=$(echo $line | awk '{print $2}');
+#     result=$(docker pull $image);
+#     if [[ $result == *"Image is up to date"* ]]; then
+#         echo "Image $image is up to date";
+#     else
+#         if [[ $result == *"no such host"* ]]; then
+#             echo "Probably no internet connection. Restarting container without updating images";
+#         else
+#             echo "Image $image has been updated";
+#             should_rebuild=true;
+#         fi
+#     fi
+# done < .temp_images;
+
+git pull
+
+if [ "$should_rebuild" = true ]; then
+    echo "Rebuilding container";
+    docker-compose -f docker-compose.dev.yml up -d --build --remove-orphans > /dev/null 2>&1
+    echo "Finished rebuilding container";
+else
+    echo "No images have been updated. Restarting container.";
+    docker-compose -f docker-compose.dev.yml up -d > /dev/null 2>&1
+    echo "Finished backing up";
+fi
+
+# remove temp files
+rm .temp_images;
+rm .temp_volumes;

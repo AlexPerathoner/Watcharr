@@ -5,8 +5,17 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: watcharr
-    ports:
-      - 3080:3080
+    expose:
+      - 3080
     volumes:
       - /mnt/dockpool/beluga/Watcharr/container_data:/data
     restart: unless-stopped
+    labels:
+      - "net.unraid.docker.icon=https://i.imgur.com/5Ah733A.png"
+      - "net.unraid.docker.webui=https://watcharr.cubetto.local/"
+    networks:
+      - nginxproxymanager_default
+
+networks:
+  nginxproxymanager_default:
+    external: true
